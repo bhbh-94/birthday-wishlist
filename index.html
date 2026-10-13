@@ -3,11 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Birthday Wishlist & Party Hub</title>
+    <title>My Birthday Wishlist</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs for Cloud Sync / Firewall Connection -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // ==========================================
+        // 🔑 PASTE YOUR FIREBASE CREDENTIALS HERE
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Expose Firebase functions globally for the app logic
+        window.FB_db = db;
+        window.FB_ref = ref;
+        window.FB_set = set;
+        window.FB_onValue = onValue;
+        window.FB_push = push;
+        window.FB_remove = remove;
+        window.FB_update = update;
+
+        // Trigger initial load once Firebase script is ready
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -87,7 +122,7 @@
                             <i class="fa-solid fa-utensils mr-1"></i> Gift List
                         </span>
                         <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display mb-2">
-                             🎂🎉
+                            🎂🎉
                         </h2>
                         <p class="text-slate-600 text-sm leading-relaxed max-w-xl">
                             hii 朋友们，这个生日聚会主要还是想和你们聚一聚，礼物不用太贵重，有心就好，不过越多我也会越开心，(期待你们的礼物!!) heheheh
@@ -237,9 +272,8 @@
     </div>
 
     <script>
-        // Default initial items if storage is empty
-        const INITIAL_WISHLIST = [
-            {
+        const INITIAL_WISHLIST = {
+            "1": {
                 id: "1",
                 title: "Noise Cancelling Headphones",
                 price: 89.99,
@@ -249,7 +283,7 @@
                 description: "Over-ear bluetooth headphones in black or dark blue.",
                 claimedBy: null
             },
-            {
+            "2": {
                 id: "2",
                 title: "Minimalist Leather Wallet",
                 price: 35.00,
@@ -259,7 +293,7 @@
                 description: "Slim RFID-blocking card holder in brown leather.",
                 claimedBy: "Alex"
             },
-            {
+            "3": {
                 id: "3",
                 title: "Aromatherapy Reed Diffuser",
                 price: 24.50,
@@ -269,7 +303,7 @@
                 description: "Lavender or Eucalyptus scent for living room.",
                 claimedBy: null
             },
-            {
+            "4": {
                 id: "4",
                 title: "Espresso Coffee Beans (1kg)",
                 price: 28.00,
@@ -279,31 +313,30 @@
                 description: "Medium-dark roast whole beans.",
                 claimedBy: "Sarah"
             }
-        ];
-
-        let wishlist = [];
-        let viewMode = 'guest'; // 'guest' or 'host'
-        let currentClaimItemId = null;
-
-        // Initialize App
-        window.onload = function() {
-            const stored = localStorage.getItem('party_wishlist_data');
-            if (stored) {
-                try {
-                    wishlist = JSON.parse(stored);
-                } catch(e) {
-                    wishlist = INITIAL_WISHLIST;
-                }
-            } else {
-                wishlist = INITIAL_WISHLIST;
-                saveToStorage();
-            }
-            setViewMode('guest');
         };
 
-        function saveToStorage() {
-            localStorage.setItem('party_wishlist_data', JSON.stringify(wishlist));
-        }
+        let wishlistMap = {};
+        let viewMode = 'guest'; 
+        let currentClaimItemId = null;
+
+        window.addEventListener('firebase-ready', () => {
+            const wishlistRef = window.FB_ref(window.FB_db, 'wishlist');
+            
+            window.FB_onValue(wishlistRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    wishlistMap = data;
+                } else {
+                    window.FB_set(wishlistRef, INITIAL_WISHLIST);
+                    wishlistMap = INITIAL_WISHLIST;
+                }
+                renderItems();
+            });
+        });
+
+        window.onload = function() {
+            setViewMode('guest');
+        };
 
         function setViewMode(mode) {
             viewMode = mode;
@@ -324,8 +357,9 @@
         }
 
         function updateProgress() {
-            const total = wishlist.length;
-            const claimed = wishlist.filter(item => item.claimedBy).length;
+            const items = Object.values(wishlistMap);
+            const total = items.length;
+            const claimed = items.filter(item => item.claimedBy).length;
             const percent = total > 0 ? Math.round((claimed / total) * 100) : 0;
 
             document.getElementById('claimedCount').innerText = claimed;
@@ -344,21 +378,20 @@
             const category = document.getElementById('categoryFilter').value;
             const sortBy = document.getElementById('sortBy').value;
 
-            // Filter
-            let filtered = wishlist.filter(item => {
-                const matchesSearch = item.title.toLowerCase().includes(search) || item.description.toLowerCase().includes(search);
+            let items = Object.values(wishlistMap);
+
+            let filtered = items.filter(item => {
+                const matchesSearch = (item.title || '').toLowerCase().includes(search) || (item.description || '').toLowerCase().includes(search);
                 const matchesCategory = category === 'ALL' || item.category === category;
                 return matchesSearch && matchesCategory;
             });
 
-            // Sort
             filtered.sort((a, b) => {
                 if (sortBy === 'price-asc') return a.price - b.price;
                 if (sortBy === 'price-desc') return b.price - a.price;
                 if (sortBy === 'title') return a.title.localeCompare(b.title);
-                // default priority sorting
                 const pMap = { 'High': 3, 'Medium': 2, 'Low': 1 };
-                return pMap[b.priority] - pMap[a.priority];
+                return (pMap[b.priority] || 2) - (pMap[a.priority] || 2);
             });
 
             if (filtered.length === 0) {
@@ -374,7 +407,6 @@
                 
                 return `
                     <div class="bg-white/90 rounded-2xl border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden relative group">
-                        <!-- Image Container -->
                         <div class="h-44 w-full bg-slate-100 relative overflow-hidden">
                             <img src="${item.image || 'https://placehold.co/600x400/fce7f3/db2777?text=Birthday+Gift'}" 
                                  alt="${item.title}" 
@@ -390,7 +422,6 @@
                             </span>
                         </div>
 
-                        <!-- Card Body -->
                         <div class="p-5 flex-1 flex flex-col justify-between">
                             <div>
                                 <div class="text-xs font-semibold text-slate-400 mb-1">${item.category}</div>
@@ -399,7 +430,7 @@
                             </div>
 
                             <div class="pt-3 border-t border-slate-100 flex items-center justify-between mt-auto">
-                                <span class="text-lg font-extrabold text-slate-900">$${parseFloat(item.price).toFixed(2)}</span>
+                                <span class="text-lg font-extrabold text-slate-900">RM${parseFloat(item.price).toFixed(2)}</span>
                                 
                                 ${viewMode === 'host' ? `
                                     <div class="flex gap-1">
@@ -425,10 +456,10 @@
         }
 
         function openClaimModal(id) {
-            const item = wishlist.find(i => i.id === id);
+            const item = wishlistMap[id];
             if (!item) return;
             currentClaimItemId = id;
-            document.getElementById('claimItemTitle').innerText = `${item.title} ($${parseFloat(item.price).toFixed(2)})`;
+            document.getElementById('claimItemTitle').innerText = `${item.title} (RM${parseFloat(item.price).toFixed(2)})`;
             document.getElementById('friendNameInput').value = '';
             document.getElementById('claimModal').classList.remove('hidden');
         }
@@ -445,14 +476,9 @@
                 return;
             }
 
-            const item = wishlist.find(i => i.id === currentClaimItemId);
-            if (item) {
-                item.claimedBy = name;
-                saveToStorage();
-                renderItems();
+            const itemRef = window.FB_ref(window.FB_db, `wishlist/${currentClaimItemId}`);
+            window.FB_update(itemRef, { claimedBy: name }).then(() => {
                 closeClaimModal();
-                
-                // Trigger Festive Confetti
                 if (typeof confetti === 'function') {
                     confetti({
                         particleCount: 80,
@@ -460,16 +486,12 @@
                         origin: { y: 0.7 }
                     });
                 }
-            }
+            });
         }
 
         function unclaimItem(id) {
-            const item = wishlist.find(i => i.id === id);
-            if (item) {
-                item.claimedBy = null;
-                saveToStorage();
-                renderItems();
-            }
+            const itemRef = window.FB_ref(window.FB_db, `wishlist/${id}`);
+            window.FB_update(itemRef, { claimedBy: null });
         }
 
         function openModal() {
@@ -484,7 +506,7 @@
         }
 
         function editModal(id) {
-            const item = wishlist.find(i => i.id === id);
+            const item = wishlistMap[id];
             if (!item) return;
 
             document.getElementById('modalTitle').innerText = "Edit Wishlist Item";
@@ -510,15 +532,12 @@
             const description = document.getElementById('itemDescription').value;
 
             if (id) {
-                // Update existing
-                const index = wishlist.findIndex(i => i.id === id);
-                if (index !== -1) {
-                    wishlist[index] = { ...wishlist[index], title, price, priority, category, image, description };
-                }
+                const itemRef = window.FB_ref(window.FB_db, `wishlist/${id}`);
+                window.FB_update(itemRef, { title, price, priority, category, image, description });
             } else {
-                // Create new
+                const newId = 'item_' + Date.now();
                 const newItem = {
-                    id: Date.now().toString(),
+                    id: newId,
                     title,
                     price,
                     priority,
@@ -527,18 +546,18 @@
                     description,
                     claimedBy: null
                 };
-                wishlist.push(newItem);
+                const itemRef = window.FB_ref(window.FB_db, `wishlist/${newId}`);
+                window.FB_set(itemRef, newItem);
             }
 
-            saveToStorage();
-            renderItems();
             closeModal();
         }
 
         function deleteItem(id) {
-            wishlist = wishlist.filter(i => i.id !== id);
-            saveToStorage();
-            renderItems();
+            if (confirm("Are you sure you want to delete this item?")) {
+                const itemRef = window.FB_ref(window.FB_db, `wishlist/${id}`);
+                window.FB_remove(itemRef);
+            }
         }
     </script>
 </body>
