@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Wishlist & Party Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        party: {
+                            50: '#fdf2f8',
+                            100: '#fce7f3',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            700: '#be185d',
+                            purple: '#8b5cf6',
+                            gold: '#f59e0b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 50%, #e0e7ff 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-slate-800 font-sans pb-16 antialiased selection:bg-pink-200">
+
+    <header class="sticky top-0 z-40 glass-card border-b border-pink-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/20 text-xl font-bold">
+                    🎁
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold font-display text-slate-900 tracking-tight">
+                        Zk's Birthday Wishlist
+                    </h1>
+                </div>
+            </div>
+
+            <!-- View Switcher -->
+            <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+                <button id="viewGuestBtn" onclick="setViewMode('guest')" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2">
+                    <i class="fa-solid font-normal fa-users text-xs"></i> Friend View
+                </button>
+                <button id="viewHostBtn" onclick="setViewMode('host')" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2">
+                    <i class="fa-solid fa-user-gear text-xs"></i> Host View
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+
+        <section class="mb-8">
+            <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-xl shadow-purple-500/5 relative overflow-hidden border border-white">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-pink-300/30 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute right-1/3 -top-10 w-48 h-48 bg-purple-300/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center relative z-10">
+                    <div class="lg:col-span-2">
+                        <span class="px-3 py-1 bg-pink-100 text-pink-700 text-xs font-bold rounded-full uppercase tracking-wider inline-block mb-3">
+                            <i class="fa-solid fa-utensils mr-1"></i> Gift List
+                        </span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display mb-2">
+                             🎂🎉
+                        </h2>
+                        <p class="text-slate-600 text-sm leading-relaxed max-w-xl">
+                            hii 朋友们，这个生日聚会主要还是想和你们聚一聚，礼物不用太贵重，有心就好，不过越多我也会越开心，(期待你们的礼物!!) heheheh
+                        </p>
+                    </div>
+
+                    <!-- Progress Stats -->
+                    <div class="bg-white/90 p-5 rounded-2xl shadow-sm border border-pink-100/80 flex flex-col justify-center">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Wishlist Progress</span>
+                            <span id="progressPercent" class="text-sm font-extrabold text-pink-600">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-3 p-0.5 border border-slate-200/50">
+                            <div id="progressBar" class="bg-gradient-to-r from-pink-500 to-purple-600 h-full rounded-full transition-all duration-500 w-0"></div>
+                        </div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-600">
+                            <span><strong id="claimedCount" class="text-slate-900 font-bold">0</strong> / <span id="totalCount">0</span> Claimed</span>
+                            <span class="text-purple-600 font-medium" id="remainingCount">0 Remaining</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6">
+            <!-- Filter & Search bar -->
+            <div class="flex flex-wrap items-center gap-2 flex-1">
+                <div class="relative flex-1 min-w-[200px]">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="renderItems()" placeholder="Search gifts..." class="w-full pl-9 pr-4 py-2 bg-white/80 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition">
+                </div>
+                
+                <select id="categoryFilter" onchange="renderItems()" class="bg-white/80 border border-slate-200 px-3 py-2 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/50">
+                    <option value="ALL">All Categories</option>
+                    <option value="Tech & Gadgets">Tech & Gadgets</option>
+                    <option value="Fashion & Wearables">Fashion & Wearables</option>
+                    <option value="Home & Living">Home & Living</option>
+                    <option value="Books & Hobby">Books & Hobby</option>
+                    <option value="Other">Other</option>
+                </select>
+
+                <select id="sortBy" onchange="renderItems()" class="bg-white/80 border border-slate-200 px-3 py-2 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500/50">
+                    <option value="priority">Sort by Priority</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="title">Title (A-Z)</option>
+                </select>
+            </div>
+
+            <!-- Host Add Item Button (Host Mode Only) -->
+            <div id="hostControls" class="hidden">
+                <button onclick="openModal()" class="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-pink-500/25 transition active:scale-95 flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-plus"></i> Add New Gift Item
+                </button>
+            </div>
+        </div>
+
+        <div id="giftGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Dynamic Gift Cards Render Here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-16 glass-card rounded-3xl mt-4">
+            <div class="w-16 h-16 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                🎁
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">No wishlist items found</h3>
+            <p class="text-slate-500 text-sm max-w-sm mx-auto">Try adjusting your filters or search terms. Switch to Host View to add new gifts!</p>
+        </div>
+    </main>
+
+    <div id="giftModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm hidden transition-opacity">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 transform transition-all relative">
+            <button onclick="closeModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 text-xl font-bold p-1">
+                ✕
+            </button>
+            <h2 id="modalTitle" class="text-2xl font-extrabold font-display text-slate-900 mb-6">Add Wishlist Item</h2>
+            
+            <form id="giftForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="itemId">
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Item Title *</label>
+                    <input type="text" id="itemTitle" required placeholder="e.g., Wireless Mechanical Keyboard" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Estimated Price (RM) *</label>
+                        <input type="number" id="itemPrice" step="0.01" min="0" required placeholder="49.99" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Priority</label>
+                        <select id="itemPriority" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500">
+                            <option value="High">🔥 High</option>
+                            <option value="Medium" selected>⭐ Medium</option>
+                            <option value="Low">💡 Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Category</label>
+                        <select id="itemCategory" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-pink-500">
+                            <option value="Tech & Gadgets">Tech & Gadgets</option>
+                            <option value="Fashion & Wearables">Fashion & Wearables</option>
+                            <option value="Home & Living">Home & Living</option>
+                            <option value="Books & Hobby">Books & Hobby</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Image URL (Optional)</label>
+                        <input type="url" id="itemImage" placeholder="https://..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Description / Notes</label>
+                    <textarea id="itemDescription" rows="3" placeholder="Color preferences, specs, or shop details..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 bg-pink-500 hover:bg-pink-600 text-white text-sm font-bold rounded-xl shadow-md transition">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="claimModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100">
+            <div class="w-12 h-12 bg-pink-100 text-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl">
+                🎁
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mb-1">Claim this Gift</h3>
+            <p id="claimItemTitle" class="text-sm font-semibold text-pink-600 mb-4"></p>
+            
+            <input type="text" id="friendNameInput" placeholder="Enter your name" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-pink-500 font-medium">
+            
+            <div class="flex gap-2">
+                <button onclick="closeClaimModal()" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                <button onclick="confirmClaim()" class="flex-1 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold rounded-xl shadow-md transition">Claim Gift!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default initial items if storage is empty
+        const INITIAL_WISHLIST = [
+            {
+                id: "1",
+                title: "Noise Cancelling Headphones",
+                price: 89.99,
+                priority: "High",
+                category: "Tech & Gadgets",
+                image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+                description: "Over-ear bluetooth headphones in black or dark blue.",
+                claimedBy: null
+            },
+            {
+                id: "2",
+                title: "Minimalist Leather Wallet",
+                price: 35.00,
+                priority: "Medium",
+                category: "Fashion & Wearables",
+                image: "https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=600&q=80",
+                description: "Slim RFID-blocking card holder in brown leather.",
+                claimedBy: "Alex"
+            },
+            {
+                id: "3",
+                title: "Aromatherapy Reed Diffuser",
+                price: 24.50,
+                priority: "Low",
+                category: "Home & Living",
+                image: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=600&q=80",
+                description: "Lavender or Eucalyptus scent for living room.",
+                claimedBy: null
+            },
+            {
+                id: "4",
+                title: "Espresso Coffee Beans (1kg)",
+                price: 28.00,
+                priority: "High",
+                category: "Books & Hobby",
+                image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=600&q=80",
+                description: "Medium-dark roast whole beans.",
+                claimedBy: "Sarah"
+            }
+        ];
+
+        let wishlist = [];
+        let viewMode = 'guest'; // 'guest' or 'host'
+        let currentClaimItemId = null;
+
+        // Initialize App
+        window.onload = function() {
+            const stored = localStorage.getItem('party_wishlist_data');
+            if (stored) {
+                try {
+                    wishlist = JSON.parse(stored);
+                } catch(e) {
+                    wishlist = INITIAL_WISHLIST;
+                }
+            } else {
+                wishlist = INITIAL_WISHLIST;
+                saveToStorage();
+            }
+            setViewMode('guest');
+        };
+
+        function saveToStorage() {
+            localStorage.setItem('party_wishlist_data', JSON.stringify(wishlist));
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            const guestBtn = document.getElementById('viewGuestBtn');
+            const hostBtn = document.getElementById('viewHostBtn');
+            const hostControls = document.getElementById('hostControls');
+
+            if (mode === 'host') {
+                hostBtn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 bg-white text-pink-600 shadow-sm";
+                guestBtn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-slate-500 hover:text-slate-800";
+                hostControls.classList.remove('hidden');
+            } else {
+                guestBtn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 bg-white text-pink-600 shadow-sm";
+                hostBtn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 text-slate-500 hover:text-slate-800";
+                hostControls.classList.add('hidden');
+            }
+            renderItems();
+        }
+
+        function updateProgress() {
+            const total = wishlist.length;
+            const claimed = wishlist.filter(item => item.claimedBy).length;
+            const percent = total > 0 ? Math.round((claimed / total) * 100) : 0;
+
+            document.getElementById('claimedCount').innerText = claimed;
+            document.getElementById('totalCount').innerText = total;
+            document.getElementById('remainingCount').innerText = `${total - claimed} Remaining`;
+            document.getElementById('progressPercent').innerText = `${percent}%`;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+        }
+
+        function renderItems() {
+            updateProgress();
+            const grid = document.getElementById('giftGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+
+            // Filter
+            let filtered = wishlist.filter(item => {
+                const matchesSearch = item.title.toLowerCase().includes(search) || item.description.toLowerCase().includes(search);
+                const matchesCategory = category === 'ALL' || item.category === category;
+                return matchesSearch && matchesCategory;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                if (sortBy === 'price-asc') return a.price - b.price;
+                if (sortBy === 'price-desc') return b.price - a.price;
+                if (sortBy === 'title') return a.title.localeCompare(b.title);
+                // default priority sorting
+                const pMap = { 'High': 3, 'Medium': 2, 'Low': 1 };
+                return pMap[b.priority] - pMap[a.priority];
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            grid.innerHTML = filtered.map(item => {
+                const isClaimed = Boolean(item.claimedBy);
+                const priorityBadge = item.priority === 'High' ? 'bg-amber-100 text-amber-700' : (item.priority === 'Medium' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600');
+                
+                return `
+                    <div class="bg-white/90 rounded-2xl border border-slate-100 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden relative group">
+                        <!-- Image Container -->
+                        <div class="h-44 w-full bg-slate-100 relative overflow-hidden">
+                            <img src="${item.image || 'https://placehold.co/600x400/fce7f3/db2777?text=Birthday+Gift'}" 
+                                 alt="${item.title}" 
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                 onerror="this.src='https://placehold.co/600x400/fce7f3/db2777?text=Birthday+Gift'">
+                            
+                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-xs font-bold ${priorityBadge} shadow-sm backdrop-blur-md">
+                                ${item.priority} Priority
+                            </span>
+
+                            <span class="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-xs font-bold ${isClaimed ? 'bg-pink-500 text-white' : 'bg-emerald-500 text-white'} shadow-sm">
+                                ${isClaimed ? `Claimed by ${item.claimedBy}` : 'Available'}
+                            </span>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="p-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="text-xs font-semibold text-slate-400 mb-1">${item.category}</div>
+                                <h3 class="text-base font-bold text-slate-800 line-clamp-1 mb-1">${item.title}</h3>
+                                <p class="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">${item.description || 'No description provided.'}</p>
+                            </div>
+
+                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between mt-auto">
+                                <span class="text-lg font-extrabold text-slate-900">$${parseFloat(item.price).toFixed(2)}</span>
+                                
+                                ${viewMode === 'host' ? `
+                                    <div class="flex gap-1">
+                                        <button onclick="editModal('${item.id}')" class="p-2 text-slate-400 hover:text-pink-600 rounded-lg transition"><i class="fa-solid fa-pen text-sm"></i></button>
+                                        <button onclick="deleteItem('${item.id}')" class="p-2 text-slate-400 hover:text-red-500 rounded-lg transition"><i class="fa-solid fa-trash text-sm"></i></button>
+                                    </div>
+                                ` : `
+                                    ${isClaimed ? `
+                                        <button onclick="unclaimItem('${item.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">
+                                            Unclaim
+                                        </button>
+                                    ` : `
+                                        <button onclick="openClaimModal('${item.id}')" class="px-3.5 py-1.5 bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold rounded-xl shadow-md shadow-pink-500/20 transition active:scale-95">
+                                            Claim Gift
+                                        </button>
+                                    `}
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openClaimModal(id) {
+            const item = wishlist.find(i => i.id === id);
+            if (!item) return;
+            currentClaimItemId = id;
+            document.getElementById('claimItemTitle').innerText = `${item.title} ($${parseFloat(item.price).toFixed(2)})`;
+            document.getElementById('friendNameInput').value = '';
+            document.getElementById('claimModal').classList.remove('hidden');
+        }
+
+        function closeClaimModal() {
+            document.getElementById('claimModal').classList.add('hidden');
+            currentClaimItemId = null;
+        }
+
+        function confirmClaim() {
+            const name = document.getElementById('friendNameInput').value.trim();
+            if (!name) {
+                alert('Please enter your name to claim this gift!');
+                return;
+            }
+
+            const item = wishlist.find(i => i.id === currentClaimItemId);
+            if (item) {
+                item.claimedBy = name;
+                saveToStorage();
+                renderItems();
+                closeClaimModal();
+                
+                // Trigger Festive Confetti
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 80,
+                        spread: 60,
+                        origin: { y: 0.7 }
+                    });
+                }
+            }
+        }
+
+        function unclaimItem(id) {
+            const item = wishlist.find(i => i.id === id);
+            if (item) {
+                item.claimedBy = null;
+                saveToStorage();
+                renderItems();
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modalTitle').innerText = "Add Wishlist Item";
+            document.getElementById('giftForm').reset();
+            document.getElementById('itemId').value = '';
+            document.getElementById('giftModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('giftModal').classList.add('hidden');
+        }
+
+        function editModal(id) {
+            const item = wishlist.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('modalTitle').innerText = "Edit Wishlist Item";
+            document.getElementById('itemId').value = item.id;
+            document.getElementById('itemTitle').value = item.title;
+            document.getElementById('itemPrice').value = item.price;
+            document.getElementById('itemPriority').value = item.priority;
+            document.getElementById('itemCategory').value = item.category;
+            document.getElementById('itemImage').value = item.image || '';
+            document.getElementById('itemDescription').value = item.description || '';
+
+            document.getElementById('giftModal').classList.remove('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('itemId').value;
+            const title = document.getElementById('itemTitle').value;
+            const price = parseFloat(document.getElementById('itemPrice').value);
+            const priority = document.getElementById('itemPriority').value;
+            const category = document.getElementById('itemCategory').value;
+            const image = document.getElementById('itemImage').value;
+            const description = document.getElementById('itemDescription').value;
+
+            if (id) {
+                // Update existing
+                const index = wishlist.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    wishlist[index] = { ...wishlist[index], title, price, priority, category, image, description };
+                }
+            } else {
+                // Create new
+                const newItem = {
+                    id: Date.now().toString(),
+                    title,
+                    price,
+                    priority,
+                    category,
+                    image,
+                    description,
+                    claimedBy: null
+                };
+                wishlist.push(newItem);
+            }
+
+            saveToStorage();
+            renderItems();
+            closeModal();
+        }
+
+        function deleteItem(id) {
+            wishlist = wishlist.filter(i => i.id !== id);
+            saveToStorage();
+            renderItems();
+        }
+    </script>
+</body>
+</html>
